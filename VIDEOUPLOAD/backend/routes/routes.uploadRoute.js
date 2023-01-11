@@ -7,9 +7,6 @@ import {
 
 
 const router = express.Router()
-
 router.route('/').post(uploadAttachment)
-
 router.route('/').get(getAllAttachments)
-
 export default router

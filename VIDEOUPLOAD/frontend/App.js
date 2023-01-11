@@ -1,6 +1,6 @@
 import {
   ScrollView, RefreshControl,
-  StyleSheet, Text,
+  Text,
   View, Alert, Pressable
 } from 'react-native';
 import Video from 'react-native-video';
@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react'
 import axios from 'axios';
 
 import Loader from './Loader';
-const API_ENDPOINT = '  https://f4be-105-163-156-83.in.ngrok.io/api/uploads'
+const API_ENDPOINT = 'https://1e41-105-163-156-83.in.ngrok.io/api/uploads'
 
 
 const App = () => {
@@ -62,7 +62,20 @@ const App = () => {
         }
       }
 
-      await axios.post(API_ENDPOINT, body, config)
+      const response = await axios.post(API_ENDPOINT, body, config)
+      if(response.status === 200){
+        Alert.alert('Upload Successful')
+      }
+
+      if(response.status === 500){
+        Alert.alert('Server error')
+      }
+
+      if(response.status === 403){
+        Alert.alert('Error uploading document.')
+      }
+
+
       setUploading(false)
 
     } catch (e) {
@@ -116,11 +129,11 @@ const App = () => {
               return (
                 <View key={index} className="border border-pink-900 h-60 m-2 ">
                   <Video
+                  className="absolute top-0 left-0 bottom-0 right-0"
                     key={index}
                     paused={false}
                     repeat={true}
                     source={{ uri: file }}
-                    style={styles.backgroundVideo}
                     controls={true}
                   />
                 </View>
@@ -135,13 +148,5 @@ const App = () => {
   );
 };
 
-var styles = StyleSheet.create({
-  backgroundVideo: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    bottom: 0,
-    right: 0,
-  },
-});
+
 export default App;

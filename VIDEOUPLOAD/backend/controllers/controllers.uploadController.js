@@ -1,12 +1,10 @@
 import multer from 'multer';
 import firebase from 'firebase-admin';
-import sharp from 'sharp';
-const storage = multer.memoryStorage();
 
+const storage = multer.memoryStorage();
 const upload = multer({
     storage,     
  }).array('files');
-
 
 firebase.initializeApp({
     credential: firebase.credential.cert("./serviceAccountKey.json"),
@@ -24,8 +22,6 @@ export const uploadAttachment = async (req, res) => {
                 })
             }
             for (const file of req.files) {
-                // sharp compression
-                
                 const bucket = firebase.storage().bucket();
                 const newFile = bucket.file(file.originalname);
                 await newFile.save(file.buffer);
@@ -35,7 +31,7 @@ export const uploadAttachment = async (req, res) => {
 
     } catch (error) {
         console.log(error)
-        res.status(403).send({
+        res.status(500).send({
             message: "Something went wrong while uploading..."
         })
     }
@@ -46,7 +42,7 @@ export const getAllAttachments = async (req, res) => {
         const bucket = firebase.storage().bucket();
         const options = {
             action: 'read',
-            expires: '03-17-2025'
+            expires: '01-01-2024'
         };
         const fileList = [];
         const [files] = await bucket.getFiles();
@@ -57,7 +53,7 @@ export const getAllAttachments = async (req, res) => {
         res.json(fileList);
     } catch (error) {
         console.log(error)
-        res.status(403).send({
+        res.status(500).send({
             message: "Something went wrong."
         })
     }
