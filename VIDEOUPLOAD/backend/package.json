@@ -14,8 +14,8 @@
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "firebase-admin": "^11.4.1",
+    "fluent-ffmpeg": "^2.1.2",
     "multer": "^1.4.5-lts.1",
-    "nodemon": "^2.0.20",
-    "sharp": "^0.31.3"
+    "nodemon": "^2.0.20"
   }
 }

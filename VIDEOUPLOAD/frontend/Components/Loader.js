@@ -6,7 +6,7 @@ const Loader = () => {
         <View className="bg-white h-screen flex justify-center">
 
             <ActivityIndicator size="large" color="#4D7902" />
-            <Text className="text-pink-900 text-center" >Loading...</Text>
+            <Text className="font-bold text-pink-900 text-center" >Loading...</Text>
         </View>
     )
 }
