@@ -3,11 +3,20 @@ import firebase from 'firebase-admin';
 import ffmpeg from 'fluent-ffmpeg';
 import path from 'path';
 import fs from 'fs';
-import MediaInfo from 'node-mediainfo';
 
-const storage = multer.memoryStorage();
+
+const videoFilter = (req, file, cb) => {
+    // Accept video files only
+    if (!file.originalname.match(/\.(mp4|avi|mkv)$/)) {
+        return cb(new Error('Only video files are allowed!'), false);
+    }
+    cb(null, true);
+};
+
+
 const upload = multer({
-    storage,
+    fileFilter: videoFilter,
+    storage: multer.memoryStorage(),
 }).single('files');
 
 firebase.initializeApp({
@@ -15,11 +24,11 @@ firebase.initializeApp({
     storageBucket: "logrocket-uploads.appspot.com"
 });
 
-const checkFileSize = async (inputFile) => {
+const checkFileSize = async (filePath) => {
 
-    const stats = fs.statSync(inputFile);
+    const stats = fs.statSync(filePath);
     const fileSizeInBytes = stats.size;
-    console.log(`video file size: ${fileSizeInBytes} bytes`);
+    console.log(`Video file size: ${fileSizeInBytes} bytes`);
     return fileSizeInBytes;
 }
 
@@ -29,49 +38,47 @@ export const uploadAttachment = async (req, res) => {
             if (err) {
                 console.error(err)
                 res.status(403).send({
-                    message: "Error uploading document."
+                    message: "Error uploading document. Make sure it is a video file."
                 })
+            } else {
+
+                const inputBuffer = req.file.buffer;
+
+                //save buffer to file
+                const inputFileExtension = path.extname(req.file.originalname);
+                const inputFile = `input${inputFileExtension}`;
+                console.log("Saving file to disk...", inputFile);
+
+                fs.writeFileSync(inputFile, inputBuffer);
+                console.log("File saved to disk.");
+
+                console.log(`Checking input filesize in bytes`);
+                await checkFileSize(inputFile);
+
+                ffmpeg(inputFile)
+                    .output(req.file.originalname)
+                    .videoCodec("libx264")
+                    .audioCodec('aac')
+                    .videoBitrate(`1k`)
+                    .autopad()
+                    .on("end", async function () {
+                        console.log("Video compression complete!");
+
+                        const bucket = firebase.storage().bucket();
+                        const newFile = bucket.file(req.file.originalname);
+                        await newFile.save(`./${req.file.originalname}`);
+
+                        console.log(`Checking output filesize in bytes`);
+                        await checkFileSize(`./${req.file.originalname}`);
+
+                        fs.unlinkSync(inputFile);
+                        fs.unlinkSync(req.file.originalname)
+                        res.json("Files uploaded successfully.");
+                    })
+                    .run();
             }
-
-
-            const inputBuffer = req.file.buffer;
-
-            //save buffer to file
-            const inputFileExtension = path.extname(req.file.originalname);
-            const inputFile = `input${inputFileExtension}`;
-            console.log("Saving file to disk...", inputFile);
-
-            fs.writeFileSync(inputFile, inputBuffer);
-            console.log("File saved to disk.");
-
-            console.log(`Checking input filesize in bytes`);
-            await checkFileSize(inputFile);
-
-            ffmpeg(inputFile)
-                .output(req.file.originalname)
-                .videoCodec("libx264")
-                .audioCodec('aac')
-                .videoBitrate(`1k`)
-                .autopad()
-                .on("end", async function () {
-                    console.log("Video compression complete!");
-
-                    const bucket = firebase.storage().bucket();
-                    const newFile = bucket.file(req.file.originalname);
-                    await newFile.save(`./${req.file.originalname}`);
-                
-                    console.log(`Checking output filesize in bytes`);
-                    await checkFileSize(`./${req.file.originalname}`);
-
-                    fs.unlinkSync(inputFile);
-                    fs.unlinkSync(req.file.originalname)
-                    res.json("Files uploaded successfully.");
-                })
-                .run();
-
-
-
         })
+
 
     } catch (error) {
         console.log(error)
